@@ -3,10 +3,10 @@ package model
 import (
 	"bytes"
 	"fmt"
-	"github.com/dinimicky/hcl-go-gen-util/util"
 	"github.com/hashicorp/go-hclog"
 	"github.com/huaweicloud/terraform-provider-huaweicloud/huaweicloud"
 	"go/format"
+	"hcl-go-gen-util/util"
 	"log"
 	"text/template"
 

@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/dinimicky/hcl-go-gen-util/model"
 	"go/build"
+	"hcl-go-gen-util/model"
 	"io/ioutil"
 	"log"
 	"os"
@@ -54,7 +54,7 @@ func main() {
 	src = fmt.Sprintf("package %v \n %v", pkgName, src)
 
 	//save to file
-	outputName := strings.ToLower(fmt.Sprintf("%v_%v.go", *resName))
+	outputName := strings.ToLower(fmt.Sprintf("%v.go", *resName))
 
 	err = ioutil.WriteFile(outputName, []byte(src), 0644)
 	if err != nil {
