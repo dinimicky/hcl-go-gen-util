@@ -26,6 +26,7 @@ func getMapKeys(m map[string]*schema.Provider) []string {
 
 var (
 	logger           = hclog.L()
+	ResourceIdSchema = NewHclSchema("id", &schema.Schema{Type: schema.TypeString, Computed: true})
 	cloudProviderMap = map[string]*schema.Provider{
 		"tencentcloud": tencentcloud.Provider().(*schema.Provider),
 		"huaweicloud":  huaweicloud.Provider().(*schema.Provider),
@@ -33,6 +34,7 @@ var (
 		//"aws": aws.Provider().(*schema.Provider),
 	}
 	SupportedProvider = getMapKeys(cloudProviderMap)
+
 	//cloudProviderMap = map[string]terraform.ResourceProvider{
 	//	"qc":  tencentcloud.Provider(),
 	//	"hw":  huaweicloud.Provider(),
@@ -105,7 +107,7 @@ func NewHclResource(resName, hclBlkName string, res *schema.Resource, extraHcl H
 		ResourceName: resName,
 		HclBlkName:   hclBlkName,
 		LabelNames:   label,
-		HclLabelTag:  "`hcl:\",label\"`",
+		HclLabelTag:  fmt.Sprintf("`hcl:\"%v,label\"`", resName),
 		HclSchemas:   saList,
 	}
 }
@@ -203,18 +205,28 @@ func (hr *hclResource) HclTag() string {
 	return fmt.Sprintf("`hcl:\"%v,block\"`", hr.HclBlkName)
 }
 
-func collect(resourceMap map[string]*schema.Resource) []Hcl {
-	ResourceIdSchema := NewHclSchema("id", &schema.Schema{Type: schema.TypeString, Computed: true})
-	providerHclResources := make([]Hcl, 0)
-	for resName, resource := range resourceMap {
-		hclres := NewHclResource(resName, "resource", resource, ResourceIdSchema, "Type", "Name")
-		providerHclResources = append(providerHclResources, hclres)
+func collectHclResources(hcl Hcl) []Hcl {
+	res := make([]Hcl, 0)
+	if hr, ok := hcl.(*hclResource); ok {
+		res = append(res, hr)
+		for _, hs := range hr.HclSchemas {
+			res = append(res, collectHclResources(hs)...)
+		}
 	}
-
-	return providerHclResources
+	if hs, ok := hcl.(*hclSchema); ok {
+		res = append(res, collectHclResources(hs.Elem)...)
+	}
+	return res
 }
 
-func buildProviderRootResource(provider string, subResoources []Hcl) Hcl {
+func collect(resName string, resource *schema.Resource) []Hcl {
+
+	hclres := NewHclResource(resName, "resource", resource, ResourceIdSchema, "HclResLabelType", "HclResLabelName")
+	return collectHclResources(hclres)
+
+}
+
+func BuildProviderRootResource(provider string, subResoources []Hcl) Hcl {
 	hss := make([]Hcl, len(subResoources))
 
 	for i, res := range subResoources {
@@ -234,16 +246,31 @@ func buildProviderRootResource(provider string, subResoources []Hcl) Hcl {
 	}
 }
 
-func ProviderHclResource(provider string) (Hcl, []Hcl) {
+func BuildProviderHclResource(provider string, resName string) []Hcl {
+	providerResources, ok := cloudProviderMap[provider]
+	if !ok {
+		panic(fmt.Errorf("provider %v not supported, supported provider is %v", provider, SupportedProvider))
+	}
+	if _, ok := providerResources.ResourcesMap[resName]; !ok {
+		panic(fmt.Errorf("resource name %v is wrong, supported resources are %v", resName,
+			GetAllProviderResourceName(provider)))
+	}
+	return collect(resName, providerResources.ResourcesMap[resName])
+
+}
+
+func GetAllProviderResourceName(provider string) []string {
 	providerResources, ok := cloudProviderMap[provider]
 	if !ok {
 		panic(fmt.Errorf("provider %v not supported, supported provider is %v", provider, SupportedProvider))
 	}
 
-	subResoources := collect(providerResources.ResourcesMap)
+	res := make([]string, len(providerResources.ResourcesMap))
+	i := 0
+	for k := range providerResources.ResourcesMap {
+		res[i] = k
+		i++
+	}
 
-	root := buildProviderRootResource(provider, subResoources)
-
-	return root, subResoources
-
+	return res
 }
