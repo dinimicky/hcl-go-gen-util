@@ -1,4 +1,4 @@
-package tencentcloud_instance
+package main
 
 import (
 	"flag"
@@ -54,7 +54,7 @@ func main() {
 	src = fmt.Sprintf("package %v \n %v", pkgName, src)
 
 	//save to file
-	outputName := strings.ToLower(fmt.Sprintf("%v_%v.go", *provider, *resName))
+	outputName := strings.ToLower(fmt.Sprintf("%v_%v.go", *resName))
 
 	err = ioutil.WriteFile(outputName, []byte(src), 0644)
 	if err != nil {
