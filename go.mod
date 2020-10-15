@@ -1,4 +1,4 @@
-module github.com/dinimicky/hcl-go-gen-util
+module hcl-go-gen-util
 
 go 1.15
 
