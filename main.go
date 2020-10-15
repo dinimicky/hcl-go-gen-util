@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/dinimicky/hcl-go-gen-util/model"
 	"go/build"
-	"hcl-go-gen-util/model"
 	"io/ioutil"
 	"log"
 	"os"
