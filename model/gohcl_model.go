@@ -136,7 +136,7 @@ func (hs *hclSchema) GoType() string {
 		if hs.Optional || hs.Computed {
 			return "*float"
 		}
-		return "float"
+		return "float32"
 	case schema.TypeString:
 		if hs.Optional || hs.Computed {
 			return "*string"
@@ -205,24 +205,28 @@ func (hr *hclResource) HclTag() string {
 	return fmt.Sprintf("`hcl:\"%v,block\"`", hr.HclBlkName)
 }
 
-func collectHclResources(hcl Hcl) []Hcl {
-	res := make([]Hcl, 0)
+func collectHclResources(hcl Hcl, m *map[string]Hcl) {
 	if hr, ok := hcl.(*hclResource); ok {
-		res = append(res, hr)
+		(*m)[hr.ResourceName] = hr
 		for _, hs := range hr.HclSchemas {
-			res = append(res, collectHclResources(hs)...)
+			collectHclResources(hs, m)
 		}
 	}
 	if hs, ok := hcl.(*hclSchema); ok {
-		res = append(res, collectHclResources(hs.Elem)...)
+		collectHclResources(hs.Elem, m)
 	}
-	return res
 }
 
 func collect(resName string, resource *schema.Resource) []Hcl {
 
 	hclres := NewHclResource(resName, "resource", resource, ResourceIdSchema, "HclResLabelType", "HclResLabelName")
-	return collectHclResources(hclres)
+	m := make(map[string]Hcl)
+	collectHclResources(hclres, &m)
+	hcls := make([]Hcl, 0)
+	for _, h := range m {
+		hcls = append(hcls, h)
+	}
+	return hcls
 
 }
 
