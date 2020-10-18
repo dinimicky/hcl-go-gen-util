@@ -134,7 +134,7 @@ func (hs *hclSchema) GoType() string {
 		return "int"
 	case schema.TypeFloat:
 		if hs.Optional || hs.Computed {
-			return "*float"
+			return "*float32"
 		}
 		return "float32"
 	case schema.TypeString:
