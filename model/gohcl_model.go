@@ -159,7 +159,7 @@ func (hr *hclSchema) HclTag() string {
 		return ehr.HclTag()
 	}
 	if hr.Optional {
-		return fmt.Sprintf("`hcl:\"%v\",optional`", hr.TypeName)
+		return fmt.Sprintf("`hcl:\"%v,optional\"`", hr.TypeName)
 	}
 	return fmt.Sprintf("`hcl:\"%v\"`", hr.TypeName)
 
