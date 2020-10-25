@@ -158,6 +158,9 @@ func (hr *hclSchema) HclTag() string {
 	if ehr, ok := hr.Elem.(*hclResource); hr.Elem != nil && ok {
 		return ehr.HclTag()
 	}
+	if hr.Optional {
+		return fmt.Sprintf("`hcl:\"%v\",optional`", hr.TypeName)
+	}
 	return fmt.Sprintf("`hcl:\"%v\"`", hr.TypeName)
 
 }
@@ -256,8 +259,12 @@ func BuildProviderHclResource(provider string, resName string) []Hcl {
 		panic(fmt.Errorf("provider %v not supported, supported provider is %v", provider, SupportedProvider))
 	}
 	if _, ok := providerResources.ResourcesMap[resName]; !ok {
-		panic(fmt.Errorf("resource name %v is wrong, supported resources are %v", resName,
-			GetAllProviderResourceName(provider)))
+		panic(
+			fmt.Errorf(
+				"resource name %v is wrong, supported resources are %v", resName,
+				GetAllProviderResourceName(provider),
+			),
+		)
 	}
 	return collect(resName, providerResources.ResourcesMap[resName])
 
