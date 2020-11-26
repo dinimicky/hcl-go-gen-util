@@ -6,12 +6,15 @@ import (
 	"github.com/dinimicky/hcl-go-gen-util/util"
 	"github.com/hashicorp/go-hclog"
 	"github.com/huaweicloud/terraform-provider-huaweicloud/huaweicloud"
+	"github.com/tencentcloudstack/terraform-provider-tencentcloud/tencentcloud"
+	"github.com/terraform-providers/terraform-provider-aws/aws"
 	"go/format"
 	"log"
 	"text/template"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/tencentcloudstack/terraform-provider-tencentcloud/tencentcloud"
+	_ "github.com/tencentcloudstack/terraform-provider-tencentcloud/tencentcloud"
+	_ "github.com/terraform-providers/terraform-provider-aws/aws"
 )
 
 func getMapKeys(m map[string]*schema.Provider) []string {
@@ -25,13 +28,12 @@ func getMapKeys(m map[string]*schema.Provider) []string {
 }
 
 var (
-	logger           = hclog.L()
-	ResourceIdSchema = NewHclSchema("id", &schema.Schema{Type: schema.TypeString, Computed: true})
-	cloudProviderMap = map[string]*schema.Provider{
+	logger = hclog.L()
+
+	ResourceIdSchema, cloudProviderMap = NewHclSchema("id", &schema.Schema{Type: schema.TypeString, Computed: true}), map[string]*schema.Provider{
 		"tencentcloud": tencentcloud.Provider().(*schema.Provider),
 		"huaweicloud":  huaweicloud.Provider().(*schema.Provider),
-		//"aws": aws.Provider().(*schema.Provider),
-		//"aws": aws.Provider().(*schema.Provider),
+		"aws":          aws.Provider().(*schema.Provider), //aws version v2.70.0
 	}
 	SupportedProvider = getMapKeys(cloudProviderMap)
 
