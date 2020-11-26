@@ -36,13 +36,6 @@ var (
 		"aws":          aws.Provider().(*schema.Provider), //aws version v2.70.0
 	}
 	SupportedProvider = getMapKeys(cloudProviderMap)
-
-	//cloudProviderMap = map[string]terraform.ResourceProvider{
-	//	"qc":  tencentcloud.Provider(),
-	//	"hw":  huaweicloud.Provider(),
-	//	"aws": aws.Provider(),
-	//	//"aws": aws.Provider().(*schema.Provider),
-	//}
 )
 
 type Hcl interface {
@@ -81,9 +74,14 @@ func NewHclSchema(typeName string, sa *schema.Schema) Hcl {
 		hs.Elem = NewHclResource(typeName, typeName, sa.Elem.(*schema.Resource), nil)
 	case *schema.Schema:
 		hs.Elem = NewHclSchema(typeName, sa.Elem.(*schema.Schema))
+	case schema.ValueType:
+		hs.Elem = NewHclSchema(typeName, &schema.Schema{
+			Type:     sa.Elem.(schema.ValueType),
+			Required: true,
+		})
 	case nil:
 	default:
-		panic(fmt.Errorf("Unsupported Elem type %T", sa.Elem))
+		panic(fmt.Errorf("Unsupported Elem type %T, typeName %v", sa.Elem, typeName))
 	}
 
 	return hs
