@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"github.com/dinimicky/hcl-go-gen-util/util"
 	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/huaweicloud/terraform-provider-huaweicloud/huaweicloud"
 	"github.com/tencentcloudstack/terraform-provider-tencentcloud/tencentcloud"
 	"github.com/terraform-providers/terraform-provider-aws/aws"
 	"go/format"
 	"log"
 	"text/template"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	_ "github.com/tencentcloudstack/terraform-provider-tencentcloud/tencentcloud"
-	_ "github.com/terraform-providers/terraform-provider-aws/aws"
 )
 
 func getMapKeys(m map[string]*schema.Provider) []string {
@@ -30,7 +27,9 @@ func getMapKeys(m map[string]*schema.Provider) []string {
 var (
 	logger = hclog.L()
 
-	ResourceIdSchema, cloudProviderMap = NewHclSchema("id", &schema.Schema{Type: schema.TypeString, Computed: true}), map[string]*schema.Provider{
+	ResourceIdSchema, cloudProviderMap = NewHclSchema(
+		"id", &schema.Schema{Type: schema.TypeString, Computed: true},
+	), map[string]*schema.Provider{
 		"tencentcloud": tencentcloud.Provider().(*schema.Provider),
 		"huaweicloud":  huaweicloud.Provider().(*schema.Provider),
 		"aws":          aws.Provider().(*schema.Provider), //aws version v2.70.0
@@ -75,10 +74,12 @@ func NewHclSchema(typeName string, sa *schema.Schema) Hcl {
 	case *schema.Schema:
 		hs.Elem = NewHclSchema(typeName, sa.Elem.(*schema.Schema))
 	case schema.ValueType:
-		hs.Elem = NewHclSchema(typeName, &schema.Schema{
-			Type:     sa.Elem.(schema.ValueType),
-			Required: true,
-		})
+		hs.Elem = NewHclSchema(
+			typeName, &schema.Schema{
+				Type:     sa.Elem.(schema.ValueType),
+				Required: true,
+			},
+		)
 	case nil:
 	default:
 		panic(fmt.Errorf("Unsupported Elem type %T, typeName %v", sa.Elem, typeName))
@@ -159,9 +160,10 @@ func (hr *hclSchema) HclTag() string {
 		return ehr.HclTag()
 	}
 	if hr.Optional {
-		return fmt.Sprintf("`hcl:\"%v,optional\"`", hr.TypeName)
+		return fmt.Sprintf("`hcl:\"%v,optional\" cty:\"%v\"`", hr.TypeName,
+			hr.TypeName) //hcl bug 在attribute里面如果是object, 需要使用cty来解析对象
 	}
-	return fmt.Sprintf("`hcl:\"%v\"`", hr.TypeName)
+	return fmt.Sprintf("`hcl:\"%v\" cty:\"%v\"`", hr.TypeName, hr.TypeName)
 
 }
 func (hr *hclResource) GoString(isDisplayComputed bool) string {
@@ -205,7 +207,7 @@ func render(t *template.Template, params interface{}) string {
 }
 
 func (hr *hclResource) HclTag() string {
-	return fmt.Sprintf("`hcl:\"%v,block\"`", hr.HclBlkName)
+	return fmt.Sprintf("`hcl:\"%v,block\" cty:\"%v\"`", hr.HclBlkName, hr.HclBlkName)
 }
 
 func collectHclResources(hcl Hcl, m *map[string]Hcl) {
